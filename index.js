@@ -1,11 +1,12 @@
-const express = require('express');
-const app = express();
-const port = 3000;
+import express from "express";
 
-app.get('/', (req, res) => {
-  res.send('Hello, Express.js is running!');
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.get("/", (req, res) => {
+  res.send("Express.js is running successfully!");
 });
 
-app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
+app.listen(PORT, () => {
+  console.log(`Server running at http://localhost:${PORT}`);
 });

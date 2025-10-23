@@ -1,14 +1,16 @@
-const mongoose = require("mongoose");
-require("dotenv").config();
+import mongoose from "mongoose";
 
-const connectDB = async () => {
-  try {
-    await mongoose.connect(process.env.MONGO_URI);
-    console.log("MongoDB Connected");
-  } catch (err) {
-    console.error(err.message);
-    process.exit(1);
-  }
-};
+export const database = async () => {
+    try {
+        console.log("Starting connection to mongodb...");
 
-module.exports = connectDB;
+        const response = await mongoose.connect("mongodb://127.0.0.1:27017/Novi?directConnection=true&serverSelectionTimeoutMS=2000&appName=mongosh+2.5.8")
+
+        console.log(`Connection succesfully to mongodb at : ${response.connection.host}`);
+    }
+    catch (error) {
+        console.log("mongodb connection failed")
+
+        process.exit(1)
+    }
+}

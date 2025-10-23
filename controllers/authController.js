@@ -1,46 +1,75 @@
-const User = require("../models/User");
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
+import UserModel from "../models/userModel.js";
+import { compare, hash } from "../utils/hashUtil.js";
+import { jwtSignUtil } from "../utils/jwtSignUtil.js";
 
-exports.register = async (req, res) => {
+export const register = async (req, res) => {
   try {
-    const { username, email, password } = req.body;
+    const registerData = req.body;
 
-    const existing = await User.findOne({ email });
-    if (existing) return res.status(400).json({ message: "User already exists" });
+    const existingUser = await UserModel.findOne({ email: registerData.email });
+    if (existingUser) {
+      return res.status(400).json({
+        message: "Email sudah terdaftar",
+        data: null,
+      });
+    }
 
-    const hash = await bcrypt.hash(password, 10);
-    const user = await User.create({ username, email, password: hash });
+    const hashPassword = await hash(registerData.password);
 
-    res.status(201).json({ message: "User registered", user });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+    await UserModel.create({
+      username: registerData.username,
+      email: registerData.email,
+      password: hashPassword,
+    });
+
+    res.status(201).json({
+      message: "Berhasil register, silahkan login",
+      data: null,
+    });
+  } catch (e) {
+    res.status(500).json({
+      message: e.message,
+      data: null,
+    });
   }
 };
 
-exports.login = async (req, res) => {
+export const login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const loginData = req.body;
 
-    const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ message: "User not found" });
+    const user = await UserModel.findOne({ email: loginData.email });
 
-    const valid = await bcrypt.compare(password, user.password);
-    if (!valid) return res.status(400).json({ message: "Invalid credentials" });
+    if (!user) {
+      return res.status(404).json({
+        message: "User tidak ditemukan",
+        data: null,
+      });
+    }
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "1d" });
+    const isMatch = await compare(loginData.password, user.password);
 
-    res.json({ message: "Login successful", token });
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-};
+    if (isMatch) {
+      const token = jwtSignUtil(user);
 
-exports.profile = async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id).select("-password");
-    res.json(user);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
+      return res.status(200).json({
+        message: "Login Berhasil",
+        data: {
+          username: user.username,
+          email: user.email,
+          token: token,
+        },
+      });
+    }
+
+    return res.status(401).json({
+      message: "Login Gagal, password salah",
+      data: null,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: error.message,
+      data: null,
+    });
   }
 };
